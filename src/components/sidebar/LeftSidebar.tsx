@@ -1,16 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Radio, ChevronDown } from 'lucide-react';
-import { User, Conversation, UserStatus } from '../../types';
+import { Search, Plus, Radio, ChevronDown, MessageSquarePlus } from 'lucide-react';
+import { User as UserType, Conversation, UserStatus } from '../../types';
 import { Avatar } from '../common/Avatar';
 import { ConversationItem } from './ConversationItem';
 import { playHotspotChime } from '../../hooks/useHotspotSound';
 
 interface LeftSidebarProps {
-  currentUser: User;
+  currentUser: UserType;
   conversations: Conversation[];
   activeConversationId: string;
   onSelectConversation: (id: string) => void;
   onOpenNewPeerModal: () => void;
+  onOpenNewChatModal: () => void;
+  onOpenUserProfile: () => void;
   onUpdateUserStatus: (status: UserStatus) => void;
   className?: string;
 }
@@ -21,6 +23,8 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   activeConversationId,
   onSelectConversation,
   onOpenNewPeerModal,
+  onOpenNewChatModal,
+  onOpenUserProfile,
   onUpdateUserStatus,
   className = '',
 }) => {
@@ -65,11 +69,15 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     <aside
       className={`w-80 md:w-88 lg:w-96 h-full bg-[#0E121A] border-r border-white/[0.07] flex flex-col shrink-0 select-none ${className}`}
     >
-      {/* 1. Current User Identity Card with Status Switcher */}
+      {/* 1. Current User Identity Card with Status Switcher & Edit Profile */}
       <div className="p-4 border-b border-white/[0.07] bg-[#111622]/80">
         <div className="relative">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 min-w-0">
+            <div
+              onClick={onOpenUserProfile}
+              className="flex items-center gap-3 min-w-0 cursor-pointer group"
+              title="Click to view & edit your profile"
+            >
               <Avatar
                 src={currentUser.avatar}
                 name={currentUser.displayName}
@@ -79,15 +87,18 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
               />
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-bold text-white truncate">
+                  <span className="text-sm font-bold text-white truncate group-hover:text-orange-400 transition-colors">
                     {currentUser.displayName}
                   </span>
-                  <span className="text-[10px] font-mono px-1 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                  <span className="text-[10px] font-mono px-1 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 shrink-0">
                     YOU
                   </span>
                 </div>
                 <div
-                  onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsStatusDropdownOpen(!isStatusDropdownOpen);
+                  }}
                   className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200 cursor-pointer transition-colors"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -97,17 +108,30 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
               </div>
             </div>
 
-            {/* Quick Action: New Peer Modal */}
-            <button
-              onClick={() => {
-                playHotspotChime('click');
-                onOpenNewPeerModal();
-              }}
-              title="Discover Nearby Hotspot Peers"
-              className="p-2 rounded-xl bg-orange-500/10 hover:bg-orange-500 text-orange-400 hover:text-white border border-orange-500/20 transition-all cursor-pointer shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
+            {/* Top Sidebar Action Buttons: New Chat & Radar */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => {
+                  playHotspotChime('click');
+                  onOpenNewChatModal();
+                }}
+                title="Start New Conversation"
+                className="p-2 rounded-xl bg-orange-500/10 hover:bg-orange-500 text-orange-400 hover:text-white border border-orange-500/20 transition-all cursor-pointer shadow-sm"
+              >
+                <MessageSquarePlus className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => {
+                  playHotspotChime('click');
+                  onOpenNewPeerModal();
+                }}
+                title="Discover Nearby Hotspot Peers"
+                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-all cursor-pointer shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Status Dropdown Menu */}
@@ -124,7 +148,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                     setIsStatusDropdownOpen(false);
                     playHotspotChime('click');
                   }}
-                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs text-left transition-colors ${
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs text-left transition-colors cursor-pointer ${
                     currentUser.status === opt.value
                       ? 'bg-orange-500/15 text-orange-400 font-medium'
                       : 'text-slate-300 hover:bg-white/5'
@@ -162,7 +186,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-2 text-[11px] text-slate-500 hover:text-slate-300"
+              className="absolute right-2.5 top-2 text-[11px] text-slate-500 hover:text-slate-300 cursor-pointer"
             >
               ✕
             </button>
@@ -231,14 +255,14 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         ) : (
           <div className="py-12 px-4 text-center">
             <Radio className="w-8 h-8 text-slate-600 mx-auto mb-2 opacity-60" />
-            <p className="text-xs font-semibold text-slate-400">No matching peers found</p>
-            <p className="text-[11px] text-slate-500 mt-1">Try a different search term or scan the subnet</p>
+            <p className="text-xs font-semibold text-slate-400">No matching conversations</p>
+            <p className="text-[11px] text-slate-500 mt-1">Start a conversation from contacts</p>
             <button
-              onClick={onOpenNewPeerModal}
-              className="mt-3 px-3 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 text-xs font-medium border border-orange-500/30 inline-flex items-center gap-1.5"
+              onClick={onOpenNewChatModal}
+              className="mt-3 px-3 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 text-xs font-medium border border-orange-500/30 inline-flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Discover Nearby Peers</span>
+              <MessageSquarePlus className="w-3.5 h-3.5" />
+              <span>New Conversation</span>
             </button>
           </div>
         )}

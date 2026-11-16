@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Radio, MessageSquare, LogOut, ShieldCheck, Zap } from 'lucide-react';
+import { Settings, Radio, MessageSquare, LogOut, ShieldCheck, Zap, Users } from 'lucide-react';
 import { User, ActiveView } from '../../types';
 import { Avatar } from '../common/Avatar';
 import { playHotspotChime } from '../../hooks/useHotspotSound';
@@ -7,8 +7,10 @@ import { playHotspotChime } from '../../hooks/useHotspotSound';
 interface AppHeaderProps {
   currentUser: User;
   activeView: ActiveView;
+  contactsCount: number;
   onNavigate: (view: ActiveView) => void;
   onOpenNewPeerModal: () => void;
+  onOpenUserProfile: () => void;
   onLogout: () => void;
   peerCount: number;
 }
@@ -16,8 +18,10 @@ interface AppHeaderProps {
 export const AppHeader: React.FC<AppHeaderProps> = ({
   currentUser,
   activeView,
+  contactsCount,
   onNavigate,
   onOpenNewPeerModal,
+  onOpenUserProfile,
   onLogout,
   peerCount,
 }) => {
@@ -49,7 +53,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               playHotspotChime('click');
               onNavigate('chat');
             }}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
               activeView === 'chat'
                 ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]'
@@ -58,12 +62,31 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <MessageSquare className="w-3.5 h-3.5" />
             <span>Messages</span>
           </button>
+
+          <button
+            onClick={() => {
+              playHotspotChime('click');
+              onNavigate('contacts');
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+              activeView === 'contacts'
+                ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Contacts</span>
+            <span className="text-[10px] font-mono px-1 py-0.2 rounded-full bg-white/10 text-slate-300">
+              {contactsCount}
+            </span>
+          </button>
+
           <button
             onClick={() => {
               playHotspotChime('click');
               onNavigate('settings');
             }}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
               activeView === 'settings'
                 ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]'
@@ -109,11 +132,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
         <div className="h-4 w-px bg-white/10 hidden sm:block" />
 
-        {/* Current User Quick View */}
+        {/* Current User Quick View (Click to open Profile Modal) */}
         <div
-          onClick={() => onNavigate('settings')}
-          className="flex items-center gap-2 pl-1 pr-2 py-0.5 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
-          title="Click to open Settings"
+          onClick={onOpenUserProfile}
+          className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg hover:bg-white/10 cursor-pointer transition-colors group"
+          title="Click to view & edit your profile"
         >
           <Avatar
             src={currentUser.avatar}
@@ -122,8 +145,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             status={currentUser.status}
           />
           <div className="hidden sm:block text-left">
-            <p className="text-xs font-semibold text-slate-200 leading-none">{currentUser.displayName}</p>
-            <p className="text-[10px] font-mono text-slate-500 leading-tight">@{currentUser.username}</p>
+            <p className="text-xs font-semibold text-slate-200 group-hover:text-white leading-none">{currentUser.displayName}</p>
+            <p className="text-[10px] font-mono text-slate-500 group-hover:text-orange-400 leading-tight">@{currentUser.username}</p>
           </div>
         </div>
 

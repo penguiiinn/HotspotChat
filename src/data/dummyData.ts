@@ -133,8 +133,10 @@ export const INITIAL_MESSAGES: Record<string, Message[]> = {
       senderAvatar: AVATAR_PRESETS[0],
       content: 'Hey Alex! You joined the hotspot successfully. Your peer IP 192.168.43.120 registered on my ARP table.',
       timestamp: '10:28 AM',
+      date: 'Today',
       status: 'read',
       type: 'text',
+      reactions: { '⚡': ['Alex Rivers'] },
     },
     {
       id: 'm2',
@@ -144,8 +146,15 @@ export const INITIAL_MESSAGES: Record<string, Message[]> = {
       senderAvatar: AVATAR_PRESETS[1],
       content: 'Awesome! Completely disconnected from the public internet. Zero cellular data. Just pure peer-to-peer over the phone hotspot.',
       timestamp: '10:30 AM',
+      date: 'Today',
       status: 'read',
       type: 'text',
+      replyTo: {
+        id: 'm1',
+        senderId: 'contact-elena',
+        senderName: 'Elena Rostova',
+        content: 'Hey Alex! You joined the hotspot successfully. Your peer IP 192.168.43.120 registered on my ARP table.',
+      },
     },
     {
       id: 'm3',
@@ -155,6 +164,7 @@ export const INITIAL_MESSAGES: Record<string, Message[]> = {
       senderAvatar: AVATAR_PRESETS[0],
       content: 'Here is the hardware field setup topology for our hotspot tests. Check the signal routing diagram:',
       timestamp: '10:32 AM',
+      date: 'Today',
       status: 'read',
       type: 'image',
       attachment: {
@@ -173,8 +183,10 @@ export const INITIAL_MESSAGES: Record<string, Message[]> = {
       senderAvatar: AVATAR_PRESETS[0],
       content: 'Latency between our two machines is holding at a crisp 2ms. No packet drops across 10,000 UDP pings.',
       timestamp: '10:33 AM',
+      date: 'Today',
       status: 'read',
       type: 'text',
+      reactions: { '🚀': ['Alex Rivers', 'Elena Rostova'] },
     },
     {
       id: 'm5',
@@ -184,6 +196,7 @@ export const INITIAL_MESSAGES: Record<string, Message[]> = {
       senderAvatar: AVATAR_PRESETS[1],
       content: 'That is crazy fast. I will test transmitting a binary payload directly to your port 4892 next.',
       timestamp: '10:35 AM',
+      date: 'Today',
       status: 'read',
       type: 'text',
     },

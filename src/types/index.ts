@@ -7,6 +7,7 @@ export interface User {
   avatar: string;
   status: UserStatus;
   statusMessage: string;
+  about?: string;
   localIp: string;
   port: number;
   hotspotSsid: string;
@@ -21,6 +22,7 @@ export interface Contact {
   avatar: string;
   status: UserStatus;
   statusMessage: string;
+  about?: string;
   ip: string;
   port: number;
   signalStrength: number; // 0-100%
@@ -32,6 +34,9 @@ export interface Contact {
   dataExchanged?: string;
   macAddress?: string;
   fingerprint?: string;
+  sharedMediaCount?: number;
+  sharedDocsCount?: number;
+  lastContactedAt?: number;
 }
 
 export interface FileAttachment {
@@ -48,6 +53,15 @@ export interface CodeSnippet {
   code: string;
 }
 
+export interface ReplyMessagePreview {
+  id: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  type?: 'text' | 'image' | 'file' | 'system' | 'code';
+  attachmentName?: string;
+}
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -56,10 +70,14 @@ export interface Message {
   senderAvatar: string;
   content: string;
   timestamp: string;
+  date?: string; // e.g., 'Today', 'Yesterday', or ISO/date string
   status: 'sending' | 'sent' | 'delivered' | 'read';
   type: 'text' | 'image' | 'file' | 'system' | 'code';
   attachment?: FileAttachment;
   codeSnippet?: CodeSnippet;
+  replyTo?: ReplyMessagePreview;
+  isDeleted?: boolean;
+  reactions?: Record<string, string[]>; // emoji -> array of usernames
 }
 
 export interface Conversation {
@@ -106,4 +124,4 @@ export interface AppSettings {
   hotspotInterface: string;
 }
 
-export type ActiveView = 'welcome' | 'chat' | 'settings';
+export type ActiveView = 'welcome' | 'chat' | 'contacts' | 'settings' | 'profile';

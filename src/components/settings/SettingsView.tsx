@@ -39,8 +39,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [displayName, setDisplayName] = useState(currentUser.displayName);
   const [username, setUsername] = useState(currentUser.username);
   const [statusMessage, setStatusMessage] = useState(currentUser.statusMessage);
+  const [about, setAbout] = useState(currentUser.about || 'P2P mesh enthusiast. Communicating completely offline over local mobile hotspot.');
   const [avatar, setAvatar] = useState(currentUser.avatar);
   const [customAvatarInput, setCustomAvatarInput] = useState('');
+
+  // Handle Cancel Profile Editing
+  const handleCancelProfile = () => {
+    setDisplayName(currentUser.displayName);
+    setUsername(currentUser.username);
+    setStatusMessage(currentUser.statusMessage);
+    setAbout(currentUser.about || '');
+    setAvatar(currentUser.avatar);
+    setCustomAvatarInput('');
+    onNotify('Changes Cancelled', 'Profile form reverted to current identity', 'info');
+  };
 
   // Settings State
   const [appTheme, setAppTheme] = useState(settings.theme);
@@ -60,6 +72,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       displayName: displayName.trim() || currentUser.displayName,
       username: username.trim().toLowerCase().replace(/\s+/g, '_'),
       statusMessage: statusMessage.trim(),
+      about: about.trim(),
       avatar: finalAvatar,
     });
     playHotspotChime('sent');
@@ -271,13 +284,45 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  className="py-2.5 px-5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold flex items-center gap-2 shadow-lg shadow-orange-500/25 transition-all cursor-pointer"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Save Profile Identity</span>
-                </button>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    About / Description
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={about}
+                    onChange={(e) => setAbout(e.target.value)}
+                    placeholder="Short description of your peer node..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#141824] border border-white/10 text-white text-xs sm:text-sm focus:outline-none focus:border-orange-500/60 focus:ring-1 focus:ring-orange-500/50 resize-none"
+                  />
+                </div>
+
+                {/* User ID Card */}
+                <div className="p-3.5 rounded-xl bg-[#0E121A] border border-white/[0.08] flex items-center justify-between text-xs font-mono">
+                  <div>
+                    <span className="text-[10px] text-slate-500 block uppercase">Node ID</span>
+                    <span className="text-slate-200">{currentUser.id} • {currentUser.localIp}</span>
+                  </div>
+                  <span className="text-[10px] text-emerald-400 font-semibold">ONLINE</span>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleCancelProfile}
+                    className="py-2.5 px-4 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="py-2.5 px-5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold flex items-center gap-2 shadow-lg shadow-orange-500/25 transition-all cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Save Profile Identity</span>
+                  </button>
+                </div>
               </form>
             </motion.div>
           )}
