@@ -6,6 +6,7 @@ import {
   INITIAL_MESSAGES,
   DEFAULT_SETTINGS,
   AUTO_REPLY_TEMPLATES,
+  INITIAL_EMERGENCIES,
 } from './data/dummyData';
 import type {
   User,
@@ -18,6 +19,9 @@ import type {
   CodeSnippet,
   ReplyMessagePreview,
   UserStatus,
+  EmergencyAlert,
+  EmergencyType,
+  RecipientAck,
 } from './types';
 import {
   loadStoredUser,
@@ -30,6 +34,8 @@ import {
   saveStoredMessages,
   loadStoredSettings,
   saveStoredSettings,
+  loadStoredEmergencies,
+  saveStoredEmergencies,
 } from './utils/storage';
 import { WelcomeScreen } from './components/welcome/WelcomeScreen';
 import { AppHeader } from './components/layout/AppHeader';
@@ -44,6 +50,9 @@ import { ContactsView } from './components/contacts/ContactsView';
 import { UserProfileModal } from './components/profile/UserProfileModal';
 import { MediaViewerModal } from './components/chat/MediaViewerModal';
 import { SettingsView } from './components/settings/SettingsView';
+import { EmergencyBanner } from './components/emergency/EmergencyBanner';
+import { EmergencyCenterView } from './components/emergency/EmergencyCenterView';
+import { ResolveConfirmModal } from './components/emergency/ResolveConfirmModal';
 import { ToastContainer } from './components/common/Toast';
 import { useToast } from './hooks/useToast';
 import { playHotspotChime } from './hooks/useHotspotSound';
@@ -62,6 +71,9 @@ export const App: React.FC = () => {
     loadStoredMessages(INITIAL_MESSAGES)
   );
   const [settings, setSettings] = useState<AppSettings>(() => loadStoredSettings(DEFAULT_SETTINGS));
+  const [emergencies, setEmergencies] = useState<EmergencyAlert[]>(() =>
+    loadStoredEmergencies(INITIAL_EMERGENCIES)
+  );
 
   // Active conversation pointer
   const [activeConversationId, setActiveConversationId] = useState<string>('conv-elena');
@@ -73,6 +85,7 @@ export const App: React.FC = () => {
   const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
   const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
   const [detailModalContact, setDetailModalContact] = useState<Contact | null>(null);
+  const [resolvingBannerAlert, setResolvingBannerAlert] = useState<EmergencyAlert | null>(null);
 
   const [mediaViewer, setMediaViewer] = useState<{
     isOpen: boolean;
@@ -485,6 +498,175 @@ export const App: React.FC = () => {
     []
   );
 
+  // 13. Active Emergency Alert Calculation
+  const activeEmergency = emergencies.find((e) => e.status === 'active') || null;
+
+  // 14. Emergency SOS Broadcast Trigger Handler
+  const handleTriggerSos = useCallback(
+    (type: EmergencyType, messageText: string) => {
+      const now = Date.now();
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const initialRecipients: RecipientAck[] = contacts.map((c) => ({
+        contactId: c.id,
+        contactName: c.displayName,
+        contactAvatar: c.avatar,
+        contactIp: c.ip,
+        status: 'pending' as const,
+      }));
+
+      const newAlert: EmergencyAlert = {
+        id: `sos-${now}`,
+        senderId: currentUser.id,
+        senderName: currentUser.displayName,
+        senderAvatar: currentUser.avatar,
+        senderIp: currentUser.localIp,
+        type,
+        title: `${type.toUpperCase()} EMERGENCY BROADCAST`,
+        message: messageText,
+        createdAt: now,
+        timestamp: timeStr,
+        date: 'Today',
+        status: 'active',
+        recipients: initialRecipients,
+        location: {
+          name: `Hotspot Network (${currentUser.hotspotSsid})`,
+        },
+      };
+
+      setEmergencies((prev) => {
+        const updated = [newAlert, ...prev];
+        saveStoredEmergencies(updated);
+        return updated;
+      });
+
+      playHotspotChime('sos');
+      showToast(
+        '🚨 EMERGENCY SOS BROADCAST',
+        `High-priority alert transmitted to ${contacts.length} mesh peers`,
+        'network'
+      );
+
+      // Also inject a high-priority emergency broadcast message into the broadcast channel
+      const broadcastConv = conversations.find((c) => c.peer.ip === '192.168.43.255');
+      if (broadcastConv) {
+        const broadcastMsg: Message = {
+          id: `sos-msg-${now}`,
+          conversationId: broadcastConv.id,
+          senderId: currentUser.id,
+          senderName: `🚨 SOS: ${currentUser.displayName}`,
+          senderAvatar: currentUser.avatar,
+          content: `[EMERGENCY ${type.toUpperCase()} ALERT]: ${messageText}`,
+          timestamp: timeStr,
+          date: 'Today',
+          status: 'sent',
+          type: 'text',
+        };
+
+        setMessagesMap((prev) => {
+          const updated: Record<string, Message[]> = {
+            ...prev,
+            [broadcastConv.id]: [...(prev[broadcastConv.id] || []), broadcastMsg],
+          };
+          saveStoredMessages(updated);
+          return updated;
+        });
+
+        setConversations((prev) => {
+          const updated = prev.map((c) =>
+            c.id === broadcastConv.id ? { ...c, lastMessage: broadcastMsg } : c
+          );
+          saveStoredConversations(updated);
+          return updated;
+        });
+      }
+
+      // Automatically simulate realistic sequential acknowledgements from nearby peers
+      const contactsToAck = contacts.slice(0, Math.min(4, contacts.length));
+      contactsToAck.forEach((peer, idx) => {
+        const delay = 1500 + idx * 1600; // 1.5s, 3.1s, 4.7s, 6.3s
+        setTimeout(() => {
+          setEmergencies((prev) => {
+            const targetAlert = prev.find((e) => e.id === newAlert.id);
+            if (!targetAlert || targetAlert.status !== 'active') return prev;
+
+            const ackTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const updatedRecipients = targetAlert.recipients.map((r) =>
+              r.contactId === peer.id
+                ? { ...r, status: 'acknowledged' as const, acknowledgedAt: ackTime, latencyMs: 2 + idx * 2 }
+                : r
+            );
+
+            const updatedAlert = { ...targetAlert, recipients: updatedRecipients };
+            const next = prev.map((e) => (e.id === newAlert.id ? updatedAlert : e));
+            saveStoredEmergencies(next);
+            return next;
+          });
+
+          if (settings.soundEnabled) {
+            playHotspotChime('peer');
+          }
+
+          showToast(
+            `Peer ACK Received`,
+            `${peer.displayName} (${peer.ip}) acknowledged your SOS distress signal`,
+            'success'
+          );
+        }, delay);
+      });
+    },
+    [contacts, currentUser, conversations, settings.soundEnabled, showToast]
+  );
+
+  // 15. Emergency Alert Simulated Recipient Acknowledgement
+  const handleAcknowledgeAlert = useCallback(
+    (alertId: string, contactId: string) => {
+      const ackTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setEmergencies((prev) => {
+        const updated = prev.map((alert) => {
+          if (alert.id !== alertId) return alert;
+          const updatedRecipients = alert.recipients.map((r) =>
+            r.contactId === contactId
+              ? { ...r, status: 'acknowledged' as const, acknowledgedAt: ackTime, latencyMs: 3 }
+              : r
+          );
+          return { ...alert, recipients: updatedRecipients };
+        });
+        saveStoredEmergencies(updated);
+        return updated;
+      });
+
+      playHotspotChime('peer');
+      showToast('Simulated ACK', 'Peer acknowledgement logged', 'success');
+    },
+    [showToast]
+  );
+
+  // 16. Resolve Emergency Alert Handler
+  const handleResolveAlert = useCallback(
+    (alertId: string) => {
+      const now = Date.now();
+      const resolvedTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      setEmergencies((prev) => {
+        const updated = prev.map((alert) => {
+          if (alert.id !== alertId) return alert;
+          return {
+            ...alert,
+            status: 'resolved' as const,
+            resolvedAt: now,
+            resolvedTimestamp: resolvedTimeStr,
+          };
+        });
+        saveStoredEmergencies(updated);
+        return updated;
+      });
+
+      playHotspotChime('peer');
+      showToast('Emergency Resolved', 'Incident has been marked as resolved and logged to history', 'success');
+    },
+    [showToast]
+  );
+
   return (
     <div className={`h-screen w-screen overflow-hidden flex flex-col bg-[#0B0E14] text-slate-100 ${themeClass}`}>
       {/* View 1: Welcome / Login Screen */}
@@ -499,6 +681,15 @@ export const App: React.FC = () => {
         />
       )}
 
+      {/* Persistent Emergency Banner (when active and not already on emergency view) */}
+      {activeEmergency && activeView !== 'emergency' && activeView !== 'welcome' && (
+        <EmergencyBanner
+          alert={activeEmergency}
+          onOpenCenter={() => setActiveView('emergency')}
+          onRequestResolve={(a) => setResolvingBannerAlert(a)}
+        />
+      )}
+
       {/* View 2: Main Dashboard (Desktop 3-column layout) */}
       {activeView === 'chat' && (
         <div className="flex-1 flex flex-col h-full overflow-hidden">
@@ -507,6 +698,7 @@ export const App: React.FC = () => {
             currentUser={currentUser}
             activeView={activeView}
             contactsCount={contacts.length}
+            hasActiveEmergency={Boolean(activeEmergency)}
             onNavigate={setActiveView}
             onOpenNewPeerModal={() => setIsNewPeerModalOpen(true)}
             onOpenUserProfile={() => setIsUserProfileModalOpen(true)}
@@ -521,6 +713,7 @@ export const App: React.FC = () => {
               currentUser={currentUser}
               conversations={conversations}
               activeConversationId={activeConversationId}
+              hasActiveEmergency={Boolean(activeEmergency)}
               onSelectConversation={(id) => {
                 setActiveConversationId(id);
                 // Mark conversation read
@@ -533,6 +726,7 @@ export const App: React.FC = () => {
               onOpenNewPeerModal={() => setIsNewPeerModalOpen(true)}
               onOpenNewChatModal={() => setIsNewChatModalOpen(true)}
               onOpenUserProfile={() => setIsUserProfileModalOpen(true)}
+              onOpenEmergencyCenter={() => setActiveView('emergency')}
               onUpdateUserStatus={handleUpdateUserStatus}
             />
 
@@ -574,6 +768,7 @@ export const App: React.FC = () => {
             currentUser={currentUser}
             activeView={activeView}
             contactsCount={contacts.length}
+            hasActiveEmergency={Boolean(activeEmergency)}
             onNavigate={setActiveView}
             onOpenNewPeerModal={() => setIsNewPeerModalOpen(true)}
             onOpenUserProfile={() => setIsUserProfileModalOpen(true)}
@@ -599,6 +794,7 @@ export const App: React.FC = () => {
             currentUser={currentUser}
             activeView={activeView}
             contactsCount={contacts.length}
+            hasActiveEmergency={Boolean(activeEmergency)}
             onNavigate={setActiveView}
             onOpenNewPeerModal={() => setIsNewPeerModalOpen(true)}
             onOpenUserProfile={() => setIsUserProfileModalOpen(true)}
@@ -611,6 +807,31 @@ export const App: React.FC = () => {
             onUpdateUser={handleUpdateUser}
             onUpdateSettings={handleUpdateSettings}
             onBackToChat={() => setActiveView('chat')}
+            onNotify={showToast}
+          />
+        </div>
+      )}
+
+      {/* View 5: Dedicated Emergency SOS Center */}
+      {activeView === 'emergency' && (
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
+          <AppHeader
+            currentUser={currentUser}
+            activeView={activeView}
+            contactsCount={contacts.length}
+            hasActiveEmergency={Boolean(activeEmergency)}
+            onNavigate={setActiveView}
+            onOpenNewPeerModal={() => setIsNewPeerModalOpen(true)}
+            onOpenUserProfile={() => setIsUserProfileModalOpen(true)}
+            onLogout={() => setActiveView('welcome')}
+            peerCount={conversations.length}
+          />
+          <EmergencyCenterView
+            contacts={contacts}
+            emergencies={emergencies}
+            onTriggerSos={handleTriggerSos}
+            onSimulateAck={handleAcknowledgeAlert}
+            onResolveAlert={handleResolveAlert}
             onNotify={showToast}
           />
         </div>
@@ -681,6 +902,19 @@ export const App: React.FC = () => {
         onOpenImage={handleOpenImage}
         onDownloadFile={handleDownloadFile}
         onNotify={showToast}
+      />
+
+      {/* Modal 7: Global Banner Emergency Resolve Modal */}
+      <ResolveConfirmModal
+        isOpen={Boolean(resolvingBannerAlert)}
+        alert={resolvingBannerAlert}
+        onConfirm={() => {
+          if (resolvingBannerAlert) {
+            handleResolveAlert(resolvingBannerAlert.id);
+            setResolvingBannerAlert(null);
+          }
+        }}
+        onCancel={() => setResolvingBannerAlert(null)}
       />
 
       <ToastContainer toasts={toasts} onDismiss={removeToast} />

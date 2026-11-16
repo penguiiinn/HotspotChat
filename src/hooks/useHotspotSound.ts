@@ -1,4 +1,4 @@
-export const playHotspotChime = (type: 'sent' | 'received' | 'peer' | 'click') => {
+export const playHotspotChime = (type: 'sent' | 'received' | 'peer' | 'click' | 'sos') => {
   try {
     const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextClass) return;
@@ -57,6 +57,21 @@ export const playHotspotChime = (type: 'sent' | 'received' | 'peer' | 'click') =
       gain.connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 0.03);
+    } else if (type === 'sos') {
+      const now = ctx.currentTime;
+      [0, 0.16, 0.32].forEach((offset) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, now + offset);
+        osc.frequency.exponentialRampToValueAtTime(1320, now + offset + 0.1);
+        gain.gain.setValueAtTime(0.08, now + offset);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.12);
+      });
     }
   } catch {
     // AudioContext might be blocked until user gesture, safely ignore

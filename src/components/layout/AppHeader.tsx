@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Radio, MessageSquare, LogOut, ShieldCheck, Zap, Users } from 'lucide-react';
+import { Settings, Radio, MessageSquare, LogOut, ShieldCheck, Zap, Users, Siren } from 'lucide-react';
 import { User, ActiveView } from '../../types';
 import { Avatar } from '../common/Avatar';
 import { playHotspotChime } from '../../hooks/useHotspotSound';
@@ -8,6 +8,7 @@ interface AppHeaderProps {
   currentUser: User;
   activeView: ActiveView;
   contactsCount: number;
+  hasActiveEmergency?: boolean;
   onNavigate: (view: ActiveView) => void;
   onOpenNewPeerModal: () => void;
   onOpenUserProfile: () => void;
@@ -19,6 +20,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   currentUser,
   activeView,
   contactsCount,
+  hasActiveEmergency = false,
   onNavigate,
   onOpenNewPeerModal,
   onOpenUserProfile,
@@ -94,6 +96,26 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           >
             <Settings className="w-3.5 h-3.5" />
             <span>Settings</span>
+          </button>
+
+          <button
+            onClick={() => {
+              playHotspotChime('sos');
+              onNavigate('emergency');
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              activeView === 'emergency'
+                ? 'bg-red-500/25 text-red-300 border border-red-500/50 shadow-sm shadow-red-500/20'
+                : hasActiveEmergency
+                ? 'bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/20 animate-pulse'
+                : 'text-slate-400 hover:text-red-400 hover:bg-red-500/10'
+            }`}
+          >
+            <Siren className={`w-3.5 h-3.5 ${hasActiveEmergency ? 'text-red-400 animate-pulse' : 'text-red-400'}`} />
+            <span>Emergency SOS</span>
+            {hasActiveEmergency && (
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+            )}
           </button>
         </nav>
       </div>

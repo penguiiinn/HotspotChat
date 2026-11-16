@@ -1,4 +1,4 @@
-import { User, Contact, Conversation, Message, AppSettings } from '../types';
+import { User, Contact, Conversation, Message, AppSettings, EmergencyAlert } from '../types';
 
 const STORAGE_KEYS = {
   USER: 'hotspotchat_user_v1',
@@ -6,6 +6,7 @@ const STORAGE_KEYS = {
   CONVERSATIONS: 'hotspotchat_conversations_v1',
   MESSAGES: 'hotspotchat_messages_v1',
   SETTINGS: 'hotspotchat_settings_v1',
+  EMERGENCIES: 'hotspotchat_emergencies_v1',
 };
 
 export const loadStoredUser = (fallback: User): User => {
@@ -98,6 +99,25 @@ export const loadStoredSettings = (fallback: AppSettings): AppSettings => {
 export const saveStoredSettings = (settings: AppSettings): void => {
   try {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+  } catch {
+    // ignore
+  }
+};
+
+export const loadStoredEmergencies = (fallback: EmergencyAlert[]): EmergencyAlert[] => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.EMERGENCIES);
+    if (!data) return fallback;
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+export const saveStoredEmergencies = (emergencies: EmergencyAlert[]): void => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.EMERGENCIES, JSON.stringify(emergencies));
   } catch {
     // ignore
   }

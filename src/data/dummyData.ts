@@ -1,4 +1,4 @@
-import { User, Contact, Conversation, Message, DiscoveredPeer, SharedMediaItem, AppSettings } from '../types';
+import { User, Contact, Conversation, Message, DiscoveredPeer, SharedMediaItem, AppSettings, EmergencyAlert } from '../types';
 
 export const AVATAR_PRESETS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
@@ -488,4 +488,87 @@ export const AUTO_REPLY_TEMPLATES = [
   "Got your transmission. Ready to receive the next batch of payload data.",
   "Local mesh routing is active. Your node is acknowledged on port 4892.",
   "Confirmed! Zero cloud dependencies required for this transfer.",
+];
+
+export const EMERGENCY_TEMPLATES = [
+  {
+    type: 'medical' as const,
+    label: 'Medical Assistance',
+    text: 'URGENT: Individual requires immediate medical attention. First aid kit and medic needed at local node coordinates.',
+  },
+  {
+    type: 'security' as const,
+    label: 'Security Alert',
+    text: 'ALERT: Unauthorized perimeter activity or security hazard detected near field station AP.',
+  },
+  {
+    type: 'accident' as const,
+    label: 'Accident / Hazard',
+    text: 'EMERGENCY: Equipment failure / road hazard in progress. Please hold transmissions and standby for rescue routing.',
+  },
+  {
+    type: 'general' as const,
+    label: 'General Evac / SOS',
+    text: 'SOS BROADCAST: Evacuation order initiated. All connected hotspot nodes report status immediately.',
+  },
+];
+
+export const INITIAL_EMERGENCIES: EmergencyAlert[] = [
+  {
+    id: 'sos-hist-01',
+    senderId: 'contact-elena',
+    senderName: 'Elena Rostova',
+    senderAvatar: AVATAR_PRESETS[0],
+    senderIp: '192.168.43.45',
+    type: 'accident',
+    title: 'Generator Power Surge Warning',
+    message: 'Primary battery backup tripped during field experiment. Hotspot relay switched to solar reserve. Resolved without hardware loss.',
+    createdAt: Date.now() - 86400000 * 2, // 2 days ago
+    timestamp: '10:14 AM',
+    date: '2 days ago',
+    status: 'resolved',
+    resolvedAt: Date.now() - 86400000 * 2 + 1800000,
+    resolvedTimestamp: '10:44 AM',
+    location: {
+      name: 'Sector 4 Base Camp (Hotspot Mesh)',
+    },
+    recipients: [
+      {
+        contactId: 'local-node-01',
+        contactName: 'Alex Rivers',
+        contactAvatar: AVATAR_PRESETS[1],
+        contactIp: '192.168.43.120',
+        status: 'acknowledged',
+        acknowledgedAt: '10:15 AM',
+        latencyMs: 3,
+      },
+      {
+        contactId: 'contact-david',
+        contactName: 'David Chen',
+        contactAvatar: AVATAR_PRESETS[3],
+        contactIp: '192.168.43.88',
+        status: 'acknowledged',
+        acknowledgedAt: '10:16 AM',
+        latencyMs: 5,
+      },
+      {
+        contactId: 'contact-marcus',
+        contactName: 'Marcus Vance',
+        contactAvatar: AVATAR_PRESETS[5],
+        contactIp: '192.168.43.210',
+        status: 'acknowledged',
+        acknowledgedAt: '10:18 AM',
+        latencyMs: 4,
+      },
+      {
+        contactId: 'contact-sarah',
+        contactName: 'Sarah Jenkins',
+        contactAvatar: AVATAR_PRESETS[2],
+        contactIp: '192.168.43.19',
+        status: 'acknowledged',
+        acknowledgedAt: '10:19 AM',
+        latencyMs: 6,
+      },
+    ],
+  },
 ];

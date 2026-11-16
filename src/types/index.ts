@@ -124,4 +124,39 @@ export interface AppSettings {
   hotspotInterface: string;
 }
 
-export type ActiveView = 'welcome' | 'chat' | 'contacts' | 'settings' | 'profile';
+export type EmergencyType = 'medical' | 'security' | 'accident' | 'general';
+
+export type EmergencyStatus = 'active' | 'resolved';
+
+export interface RecipientAck {
+  contactId: string;
+  contactName: string;
+  contactAvatar: string;
+  contactIp: string;
+  status: 'pending' | 'acknowledged';
+  acknowledgedAt?: string;
+  latencyMs?: number;
+}
+
+export interface EmergencyAlert {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar: string;
+  senderIp: string;
+  type: EmergencyType;
+  title: string;
+  message: string;
+  createdAt: number;
+  timestamp: string;
+  date: string;
+  status: EmergencyStatus;
+  resolvedAt?: number;
+  resolvedTimestamp?: string;
+  recipients: RecipientAck[];
+  location?: {
+    name: string;
+  };
+}
+
+export type ActiveView = 'welcome' | 'chat' | 'contacts' | 'settings' | 'profile' | 'emergency';

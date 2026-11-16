@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Radio, ChevronDown, MessageSquarePlus } from 'lucide-react';
+import { Search, Plus, Radio, ChevronDown, MessageSquarePlus, Siren } from 'lucide-react';
 import { User as UserType, Conversation, UserStatus } from '../../types';
 import { Avatar } from '../common/Avatar';
 import { ConversationItem } from './ConversationItem';
@@ -9,10 +9,12 @@ interface LeftSidebarProps {
   currentUser: UserType;
   conversations: Conversation[];
   activeConversationId: string;
+  hasActiveEmergency?: boolean;
   onSelectConversation: (id: string) => void;
   onOpenNewPeerModal: () => void;
   onOpenNewChatModal: () => void;
   onOpenUserProfile: () => void;
+  onOpenEmergencyCenter?: () => void;
   onUpdateUserStatus: (status: UserStatus) => void;
   className?: string;
 }
@@ -21,10 +23,12 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   currentUser,
   conversations,
   activeConversationId,
+  hasActiveEmergency = false,
   onSelectConversation,
   onOpenNewPeerModal,
   onOpenNewChatModal,
   onOpenUserProfile,
+  onOpenEmergencyCenter,
   onUpdateUserStatus,
   className = '',
 }) => {
@@ -131,6 +135,21 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
               >
                 <Plus className="w-4 h-4" />
               </button>
+
+              <button
+                onClick={() => {
+                  playHotspotChime('sos');
+                  onOpenEmergencyCenter?.();
+                }}
+                title="Emergency SOS Broadcast Center"
+                className={`p-2 rounded-xl border transition-all cursor-pointer shadow-sm ${
+                  hasActiveEmergency
+                    ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/40 animate-pulse'
+                    : 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border-red-500/20 hover:border-red-500/30'
+                }`}
+              >
+                <Siren className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -169,6 +188,40 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             <span>SSID: {currentUser.hotspotSsid}</span>
           </span>
           <span className="text-slate-300">{currentUser.localIp}</span>
+        </div>
+
+        {/* Emergency SOS Quick Launch Strip */}
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={() => {
+              playHotspotChime('sos');
+              onOpenEmergencyCenter?.();
+            }}
+            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+              hasActiveEmergency
+                ? 'bg-gradient-to-r from-red-950/70 via-red-900/60 to-rose-950/70 border-red-500/50 text-red-300 shadow-md shadow-red-950/50 animate-pulse'
+                : 'bg-red-950/20 hover:bg-red-900/25 border-red-500/20 text-red-400 hover:text-red-300'
+            }`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <div className={`p-1 rounded-lg ${hasActiveEmergency ? 'bg-red-500 text-white' : 'bg-red-500/20 text-red-400'}`}>
+                <Siren className="w-3.5 h-3.5 animate-pulse" />
+              </div>
+              <div className="text-left min-w-0">
+                <p className="font-bold truncate text-[11px] leading-tight">
+                  {hasActiveEmergency ? 'ACTIVE SOS ALERT' : 'Emergency Center'}
+                </p>
+                <p className="text-[9px] font-mono text-red-400/80 leading-tight">
+                  {hasActiveEmergency ? 'Broadcast in progress' : 'Direct UDP broadcast'}
+                </p>
+              </div>
+            </div>
+
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 shrink-0">
+              {hasActiveEmergency ? 'LIVE' : 'SOS'}
+            </span>
+          </button>
         </div>
       </div>
 
